@@ -61,6 +61,23 @@ function createLog(log) {
   return l;
 }
 
+
+function updateLog(id, updates) {
+  const data = getData();
+  const idx = data.logs.findIndex(l => l.id === id);
+  if (idx === -1) return;
+  data.logs[idx] = { ...data.logs[idx], ...updates };
+  saveData(data);
+}
+
+function deleteLog(id, prayerId) {
+  const data = getData();
+  data.logs = data.logs.filter(l => l.id !== id);
+  const idx = data.prayers.findIndex(p => p.id === prayerId);
+  if (idx !== -1) data.prayers[idx].updated_at = new Date().toISOString();
+  saveData(data);
+}
+
 // ===== RENDER =====
 function renderList() {
   const list = document.getElementById('prayer-list');
@@ -167,10 +184,62 @@ function renderLogs(logs) {
     const div = document.createElement('div');
     div.className = 'log-entry';
     div.innerHTML = `
-      <div class="log-entry-date">${formatDate(log.date)}</div>
-      <div class="log-entry-content">${log.content || ''}</div>
-      ${log.scripture ? `<div class="log-entry-scripture">† ${log.scripture}</div>` : ''}
+      <div class="log-entry-header">
+        <div class="log-entry-date">${formatDate(log.date)}</div>
+        <div class="log-entry-actions">
+          <button class="log-edit-btn" data-id="${log.id}">수정</button>
+          <button class="log-delete-btn" data-id="${log.id}">삭제</button>
+        </div>
+      </div>
+      <div class="log-entry-body" data-id="${log.id}">
+        <div class="log-entry-content">${log.content || ''}</div>
+        ${log.scripture ? `<div class="log-entry-scripture">† ${log.scripture}</div>` : ''}
+      </div>
+      <div class="log-edit-form hidden" data-id="${log.id}">
+        <input type="date" class="field-date-inline log-edit-date" value="${log.date}" />
+        <textarea class="field-textarea sm log-edit-content" style="background:var(--bg-input);border-radius:var(--radius-sm);padding:10px;margin-top:6px">${log.content || ''}</textarea>
+        <input class="field-scripture log-edit-scripture" type="text" placeholder="말씀, 응답..." value="${log.scripture || ''}" style="margin-top:6px;display:block;width:100%" />
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn-primary sm log-edit-save" data-id="${log.id}" data-prayer="${log.prayer_id}">저장</button>
+          <button class="log-edit-cancel btn-cancel-sm" data-id="${log.id}">취소</button>
+        </div>
+      </div>
     `;
+
+    // 수정 버튼
+    div.querySelector('.log-edit-btn').addEventListener('click', () => {
+      div.querySelector(`.log-entry-body[data-id="${log.id}"]`).classList.add('hidden');
+      div.querySelector(`.log-edit-form[data-id="${log.id}"]`).classList.remove('hidden');
+    });
+
+    // 취소 버튼
+    div.querySelector('.log-edit-cancel').addEventListener('click', () => {
+      div.querySelector(`.log-entry-body[data-id="${log.id}"]`).classList.remove('hidden');
+      div.querySelector(`.log-edit-form[data-id="${log.id}"]`).classList.add('hidden');
+    });
+
+    // 저장 버튼
+    div.querySelector('.log-edit-save').addEventListener('click', () => {
+      const form = div.querySelector(`.log-edit-form[data-id="${log.id}"]`);
+      const newContent = form.querySelector('.log-edit-content').value.trim();
+      const newDate = form.querySelector('.log-edit-date').value;
+      const newScripture = form.querySelector('.log-edit-scripture').value.trim();
+      if (!newContent) { showToast('내용을 입력해주세요'); return; }
+      updateLog(log.id, { content: newContent, date: newDate, scripture: newScripture });
+      showToast('수정되었습니다');
+      renderLogs(getLogs(_editingId));
+      refreshAll();
+    });
+
+    // 삭제 버튼
+    div.querySelector('.log-delete-btn').addEventListener('click', () => {
+      if (!confirm('이 기록을 삭제할까요?')) return;
+      deleteLog(log.id, log.prayer_id);
+      showToast('삭제되었습니다');
+      renderLogs(getLogs(_editingId));
+      refreshAll();
+    });
+
     container.appendChild(div);
   });
 }
