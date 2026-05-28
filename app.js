@@ -2,7 +2,6 @@
 
 const STORAGE_KEY = 'prayer_note_data';
 
-// ===== DATA =====
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -10,29 +9,18 @@ function loadData() {
     return JSON.parse(raw);
   } catch { return { prayers: [], logs: [] }; }
 }
-
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
-
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 function getData() { return loadData(); }
-
-function uuid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
-function todayStr() {
-  return new Date().toISOString().split('T')[0];
-}
-
+function uuid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function todayStr() { return new Date().toISOString().split('T')[0]; }
 function formatDate(d) {
   if (!d) return '';
   const date = new Date(d + 'T00:00:00');
   return `${date.getFullYear()}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getDate()).padStart(2,'0')}`;
 }
 
-// ===== PRAYERS CRUD =====
-const CAT_LABELS = { personal:'개인', family:'가족', church:'교회', nation:'나라', mission:'선교', work:'직장·학업', other:'기타' };
+// ===== CRUD =====
+const CAT_LABELS = { personal:'개인', family:'가족', church:'교회', nation:'나라', mission:'선교', work:'직장', other:'기타' };
 const STATUS_LABELS = { ongoing:'기도 중', answered:'응답됨', paused:'잠시 멈춤' };
 
 let _currentFilter = 'all';
@@ -49,7 +37,6 @@ function createPrayer(prayer) {
   saveData(data);
   return p;
 }
-
 function updatePrayer(id, updates) {
   const data = getData();
   const idx = data.prayers.findIndex(p => p.id === id);
@@ -58,26 +45,23 @@ function updatePrayer(id, updates) {
   saveData(data);
   return data.prayers[idx];
 }
-
 function deletePrayer(id) {
   const data = getData();
   data.prayers = data.prayers.filter(p => p.id !== id);
   data.logs = data.logs.filter(l => l.prayer_id !== id);
   saveData(data);
 }
-
 function createLog(log) {
   const data = getData();
   const l = { ...log, id: uuid(), created_at: new Date().toISOString() };
   data.logs.push(l);
-  // update parent updated_at
   const idx = data.prayers.findIndex(p => p.id === log.prayer_id);
   if (idx !== -1) data.prayers[idx].updated_at = new Date().toISOString();
   saveData(data);
   return l;
 }
 
-// ===== RENDER PRAYERS =====
+// ===== RENDER =====
 function renderList() {
   const list = document.getElementById('prayer-list');
   const empty = document.getElementById('empty-prayers');
@@ -87,7 +71,6 @@ function renderList() {
     : prayers.filter(p => p.category === _currentFilter && p.status !== 'answered');
 
   Array.from(list.querySelectorAll('.prayer-card')).forEach(el => el.remove());
-
   if (filtered.length === 0) {
     empty.style.display = 'flex';
   } else {
@@ -100,7 +83,6 @@ function renderAnswered() {
   const list = document.getElementById('answered-list');
   const empty = document.getElementById('empty-answered');
   const answered = getPrayers().filter(p => p.status === 'answered');
-
   Array.from(list.querySelectorAll('.prayer-card')).forEach(el => el.remove());
   if (answered.length === 0) {
     empty.style.display = 'flex';
@@ -115,17 +97,19 @@ function makeCard(p) {
   const card = document.createElement('div');
   card.className = 'prayer-card';
   card.innerHTML = `
-    <div class="prayer-card-header">
+    <div class="prayer-card-top">
       <div class="prayer-card-title">${p.title}</div>
       <div class="prayer-cat-badge">${CAT_LABELS[p.category] || p.category}</div>
     </div>
     ${p.content ? `<div class="prayer-card-content">${p.content}</div>` : ''}
-    ${p.scripture ? `<div class="prayer-scripture-line">✦ ${p.scripture}</div>` : ''}
+    ${p.scripture ? `<div class="prayer-scripture-line">† ${p.scripture}</div>` : ''}
     <div class="prayer-card-footer">
       <span class="prayer-date">${formatDate(p.start_date)}</span>
-      <span class="prayer-status ${p.status}">${STATUS_LABELS[p.status]}</span>
+      <div class="prayer-card-footer-right">
+        ${logs.length > 0 ? `<span class="prayer-log-badge">이력 ${logs.length}</span>` : ''}
+        <span class="prayer-status ${p.status}">${STATUS_LABELS[p.status]}</span>
+      </div>
     </div>
-    ${logs.length > 0 ? `<div class="prayer-log-badge">기도 이력 ${logs.length}개</div>` : ''}
   `;
   card.addEventListener('click', () => openEdit(p.id));
   return card;
@@ -141,6 +125,7 @@ function refreshAll() {
 // ===== MODAL =====
 function openNew() {
   _editingId = null;
+  document.getElementById('modal-title-label').textContent = '새 기도제목';
   document.getElementById('field-title').value = '';
   document.getElementById('field-category').value = 'personal';
   document.getElementById('field-status').value = 'ongoing';
@@ -160,6 +145,8 @@ function openEdit(id) {
   const prayers = getPrayers();
   const p = prayers.find(pr => pr.id === id);
   if (!p) return;
+
+  document.getElementById('modal-title-label').textContent = '기도제목 편집';
   document.getElementById('field-title').value = p.title;
   document.getElementById('field-category').value = p.category;
   document.getElementById('field-status').value = p.status;
@@ -182,7 +169,7 @@ function renderLogs(logs) {
     div.innerHTML = `
       <div class="log-entry-date">${formatDate(log.date)}</div>
       <div class="log-entry-content">${log.content || ''}</div>
-      ${log.scripture ? `<div class="log-entry-scripture">✦ ${log.scripture}</div>` : ''}
+      ${log.scripture ? `<div class="log-entry-scripture">† ${log.scripture}</div>` : ''}
     `;
     container.appendChild(div);
   });
@@ -261,7 +248,8 @@ function calendarRefresh() {
   const daysInPrev = new Date(_calYear, _calMonth, 0).getDate();
 
   for (let i = firstDay - 1; i >= 0; i--) {
-    const el = document.createElement('div'); el.className = 'cal-day other-month'; el.textContent = daysInPrev - i; grid.appendChild(el);
+    const el = document.createElement('div'); el.className = 'cal-day other-month';
+    el.textContent = daysInPrev - i; grid.appendChild(el);
   }
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${_calYear}-${String(_calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -274,7 +262,8 @@ function calendarRefresh() {
   const total = firstDay + daysInMonth;
   const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let d = 1; d <= rem; d++) {
-    const el = document.createElement('div'); el.className = 'cal-day other-month'; el.textContent = d; grid.appendChild(el);
+    const el = document.createElement('div'); el.className = 'cal-day other-month';
+    el.textContent = d; grid.appendChild(el);
   }
 }
 
@@ -293,11 +282,11 @@ function calSelectDay(dateStr, el) {
   }
   let html = `<div class="cal-detail-date">${formatDate(dateStr)}</div>`;
   started.forEach(p => {
-    html += `<div class="cal-detail-item" data-id="${p.id}"><div class="cal-detail-item-title">🙏 ${p.title} <small style="color:var(--text-muted)">시작</small></div>${p.content ? `<div class="cal-detail-item-content">${p.content.substring(0,60)}</div>` : ''}</div>`;
+    html += `<div class="cal-detail-item" data-id="${p.id}"><div class="cal-detail-item-title">🙏 ${p.title} <span class="cal-start-badge">시작</span></div>${p.content ? `<div class="cal-detail-item-content">${p.content.substring(0,60)}</div>` : ''}</div>`;
   });
   dayLogs.forEach(log => {
     const pr = prayers.find(p => p.id === log.prayer_id);
-    html += `<div class="cal-detail-item" data-id="${log.prayer_id}"><div class="cal-detail-item-title">${pr ? pr.title : '기도'}</div>${log.content ? `<div class="cal-detail-item-content">${log.content.substring(0,80)}</div>` : ''}${log.scripture ? `<div class="log-entry-scripture" style="font-size:12px;margin-top:4px">✦ ${log.scripture}</div>` : ''}</div>`;
+    html += `<div class="cal-detail-item" data-id="${log.prayer_id}"><div class="cal-detail-item-title">${pr ? pr.title : '기도'}</div>${log.content ? `<div class="cal-detail-item-content">${log.content.substring(0,80)}</div>` : ''}${log.scripture ? `<div class="log-entry-scripture" style="font-size:12px;margin-top:4px">† ${log.scripture}</div>` : ''}</div>`;
   });
   detail.innerHTML = html;
   detail.querySelectorAll('.cal-detail-item[data-id]').forEach(item => {
@@ -318,11 +307,9 @@ function closeSettings() {
   document.getElementById('panel-settings').classList.remove('open');
   document.getElementById('panel-overlay').classList.add('hidden');
 }
-
 function updateStorageInfo() {
   const raw = localStorage.getItem(STORAGE_KEY) || '';
-  const bytes = new Blob([raw]).size;
-  const kb = (bytes / 1024).toFixed(1);
+  const kb = (new Blob([raw]).size / 1024).toFixed(1);
   const data = getData();
   document.getElementById('storage-info').textContent =
     `기도제목 ${data.prayers.length}개 · 기록 ${data.logs.length}개 · ${kb} KB`;
@@ -345,7 +332,6 @@ async function importData(file) {
     if (!json.prayers) { showToast('올바른 백업 파일이 아닙니다'); return; }
     if (!confirm(`기도제목 ${json.prayers.length}개를 불러올까요?\n기존 데이터와 병합됩니다.`)) return;
     const current = getData();
-    // merge (upsert by id)
     json.prayers.forEach(p => {
       const idx = current.prayers.findIndex(x => x.id === p.id);
       if (idx === -1) current.prayers.push(p); else current.prayers[idx] = p;
@@ -379,10 +365,15 @@ function showScreen(id) {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Cover
+  // Cover → App
   document.getElementById('btn-enter').addEventListener('click', () => {
     showScreen('screen-app');
     refreshAll();
+  });
+
+  // App → Cover (홈 버튼)
+  document.getElementById('btn-go-cover').addEventListener('click', () => {
+    showScreen('screen-cover');
   });
 
   // Tabs
@@ -412,7 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Modal
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('modal-save').addEventListener('click', saveModal);
-  document.getElementById('modal-prayer').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+  document.getElementById('modal-prayer').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
   document.getElementById('btn-delete-prayer').addEventListener('click', () => {
     if (!_editingId) return;
     if (!confirm('이 기도제목을 삭제할까요?')) return;
@@ -447,6 +440,5 @@ document.addEventListener('DOMContentLoaded', () => {
     _calMonth++; if (_calMonth > 11) { _calMonth = 0; _calYear++; } calendarRefresh();
   });
 
-  // Start on cover
   showScreen('screen-cover');
 });
