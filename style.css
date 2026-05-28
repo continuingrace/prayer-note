@@ -308,7 +308,7 @@ button { cursor: pointer; border: none; background: none; }
   font-size:10px; font-weight:700; color:var(--ink-3);
   letter-spacing:0.08em; text-transform:uppercase;
 }
-.section-label-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-top:10px; }
+.section-label-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; padding-top:20px; }
 .section-label-text { font-size:12px; font-weight:700; color:var(--ink-2); letter-spacing:0.04em; }
 .field-date-inline {
   background:transparent; border:none; outline:none;
@@ -338,19 +338,20 @@ button { cursor: pointer; border: none; background: none; }
 .btn-add-log { font-size:12px; color:var(--accent); font-weight:600; }
 .new-log-form {
   background:var(--bg-input); border:1px solid var(--border);
-  border-radius:var(--radius); padding:14px;
+  border-radius:var(--radius); padding:16px;
   display:flex; flex-direction:column; gap:12px;
+  margin-top:12px;
 }
 .new-log-form.hidden { display:none; }
 .log-entry {
   background:var(--bg-card); border:1px solid var(--border);
-  border-radius:var(--radius-sm); padding:12px 14px;
-  display:flex; flex-direction:column; gap:5px;
+  border-radius:var(--radius-sm); padding:16px;
+  display:flex; flex-direction:column; gap:6px;
 }
 .log-entry-date { font-size:10px; font-weight:700; color:var(--ink-3); letter-spacing:0.06em; text-transform:uppercase; }
 .log-entry-content { font-size:13px; color:var(--ink-1); line-height:1.75; font-weight:400; }
 .log-entry-scripture { font-size:12px; color:var(--green); line-height:1.55; }
-#prayer-log-list { display:flex; flex-direction:column; gap:8px; }
+#prayer-log-list { display:flex; flex-direction:column; gap:12px; }
 .btn-primary {
   background:var(--accent); color:#FBF9F6; border-radius:var(--radius-sm);
   padding:12px 18px; font-size:14px; font-weight:600;
